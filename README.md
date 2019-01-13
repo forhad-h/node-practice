@@ -1,1 +1,1 @@
-# node-practice
+# nodejs practice project
