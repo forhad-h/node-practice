@@ -1,68 +1,43 @@
 /* jshint esversion: 6 */
 const express = require('express');
 const Joi = require('joi');
-const logger = require('./logger');
+const logger = require('./middleware/logger');
 const morgan = require('morgan');
 const config = require('config');
+const debug = require('debug')("app:debug")
+const courses = require('./routes/courses');
 
 const app = express();
+
+app.set('view engine', 'pug');
+
+
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(express.static('public'))
+app.use('/api/courses', courses);
 
-app.use(logger)
+app.use(logger);
 
 if( app.get('env') === 'development') {
   app.use(morgan('tiny'))
-  console.log('Morgan enabled...')
+  debug('Morgan enabled...')
 }
-console.log(app.get('env'));
+
+console.log(app.get('env'))
+console.log("Application Name: " + config.get('name'));
+console.log("Mail server: " + config.get('mail.host'));
+//const mailPassword = typeof config.get('mail.password') !== 'undefined' ? config.get('mail.password') : '';
+if('password' in config.get('mail')) {
+  console.log("if");
+  console.log(config.get('mail.password'));  
+}
 
 app.use(function(req, res, next) {
   console.log('Authenticating...');
   next();
 })
 
-const courses = [
-  {id: 1, name: 'course1'},
-  {id: 2, name: 'course2'},
-  {id: 3, name: 'course3'},
-]
-app.get('/', (req, res) => {
-   res.send('Hello World')
-});
-
-app.get('/api/courses', (req, res) => {
-  res.send(courses)
-})
-
-app.get('/api/courses/:id', (req, res) => {
-  const course  = courses.find(c => c.id === parseInt(req.params.id));
-  if(!course) res.status(404).send('course not found');
-  res.send(course);
-});
-
-
-app.post('/api/courses', (req, res) => {
-
-  const schema = {
-    name: Joi.string().min(3).required()
-  };
-
-  const result = Joi.validate(req.body, schema);
-
-  if(result.error) {
-    res.status(400).send(result.error.details[0].message);
-    return;
-  }
-
-  let course = {
-    id: courses.length + 1,
-    name: req.body.name,
-  }
-  courses.push(course);
-  res.send(course);
-});
 
 
 const port  = process.env.PORT || 3000;
